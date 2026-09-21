@@ -48,9 +48,88 @@
             padding: 24px 16px;
         }
 
+        /* Fullscreen Security Lock Screen Overlay */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 380px;
+            padding: 32px 24px;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .auth-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+
+        .auth-card h2 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        .auth-card p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .pin-input {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.25rem;
+            letter-spacing: 0.2em;
+            text-align: center;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--border);
+            outline: none;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .pin-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .auth-error {
+            color: var(--danger);
+            font-size: 0.825rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        /* Main Container */
         .container {
             max-width: 1100px;
             margin: 0 auto;
+            display: none; /* Hidden until authenticated */
         }
 
         /* Top Header */
@@ -94,40 +173,6 @@
             margin-top: 2px;
         }
 
-        /* CSS Grid Stacking Layout - Fixed Height + Zero Clipping */
-        .personal-message-card {
-            background: rgba(79, 70, 229, 0.08);
-            border: 1px solid rgba(79, 70, 229, 0.2);
-            border-radius: var(--radius-md);
-            margin-bottom: 24px;
-            padding: 16px 20px;
-            box-shadow: var(--shadow-sm);
-            display: grid;
-            align-items: center;
-            justify-items: center;
-        }
-
-        .message-item {
-            grid-area: 1 / 1;
-            width: 100%;
-            text-align: center;
-            font-weight: 700;
-            color: var(--primary-hover);
-            font-size: 0.95rem;
-            line-height: 1.5;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            opacity: 0;
-            transform: translateY(6px);
-            pointer-events: none;
-            word-wrap: break-word;
-        }
-
-        .message-item.active {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
         /* Controls Area */
         .controls-bar {
             display: flex;
@@ -164,6 +209,59 @@
             font-size: 0.95rem;
             outline: none;
             cursor: pointer;
+        }
+
+        .btn-lock {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: white;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-lock:hover {
+            background: var(--danger);
+        }
+
+        /* Animated Message Card */
+        .personal-message-card {
+            background: rgba(79, 70, 229, 0.08);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+            padding: 16px 20px;
+            box-shadow: var(--shadow-sm);
+            display: grid;
+            align-items: center;
+            justify-items: center;
+        }
+
+        .message-item {
+            grid-area: 1 / 1;
+            width: 100%;
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary-hover);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 0;
+            transform: translateY(6px);
+            pointer-events: none;
+            word-wrap: break-word;
+        }
+
+        .message-item.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
         }
 
         /* Summary Cards Grid */
@@ -450,7 +548,22 @@
 </head>
 <body>
 
-    <div class="container">
+    <!-- Security Lock Overlay -->
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-icon"><i class="fa-solid fa-user-lock"></i></div>
+            <h2 id="auth-title">Security Lock</h2>
+            <p id="auth-desc">Enter your passcode to access your financial records.</p>
+            
+            <div id="auth-error-msg" class="auth-error">Incorrect passcode. Please try again.</div>
+
+            <input type="password" id="pin-field" class="pin-input" placeholder="••••" maxlength="10">
+            <button class="btn btn-primary" id="auth-submit-btn">Unlock App</button>
+        </div>
+    </div>
+
+    <!-- Protected Main Workspace -->
+    <div class="container" id="main-app-container">
         <!-- Main Header -->
         <header>
             <div class="header-title">
@@ -468,6 +581,9 @@
                     <select id="ethiopian-month" class="ethiopian-select"></select>
                     <select id="ethiopian-year" class="ethiopian-select"></select>
                 </div>
+                <button class="btn-lock" id="lock-btn" title="Lock App Now">
+                    <i class="fa-solid fa-lock"></i> Lock
+                </button>
             </div>
         </header>
 
@@ -595,6 +711,81 @@
 
     <!-- JavaScript Logic -->
     <script>
+        // Security Passcode Logic
+        const authOverlay = document.getElementById('auth-overlay');
+        const authTitle = document.getElementById('auth-title');
+        const authDesc = document.getElementById('auth-desc');
+        const pinField = document.getElementById('pin-field');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const authErrorMsg = document.getElementById('auth-error-msg');
+        const mainContainer = document.getElementById('main-app-container');
+        const lockBtn = document.getElementById('lock-btn');
+
+        function initSecurity() {
+            const storedPin = localStorage.getItem('smart_income_passcode');
+            
+            if (!storedPin) {
+                // First time configuration
+                authTitle.textContent = "Create Security Passcode";
+                authDesc.textContent = "Create a passcode to secure your private financial data.";
+                authSubmitBtn.textContent = "Save Passcode & Login";
+            } else {
+                authTitle.textContent = "Security Lock";
+                authDesc.textContent = "Enter your passcode to access your financial records.";
+                authSubmitBtn.textContent = "Unlock App";
+            }
+
+            authSubmitBtn.addEventListener('click', handleAuth);
+            pinField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleAuth();
+            });
+            lockBtn.addEventListener('click', lockApp);
+        }
+
+        function handleAuth() {
+            const enteredPin = pinField.value.trim();
+            const storedPin = localStorage.getItem('smart_income_passcode');
+
+            if (!enteredPin) {
+                showAuthError("Please enter a passcode.");
+                return;
+            }
+
+            if (!storedPin) {
+                // Setting initial passcode
+                localStorage.setItem('smart_income_passcode', enteredPin);
+                unlockApp();
+            } else {
+                if (enteredPin === storedPin) {
+                    unlockApp();
+                } else {
+                    showAuthError("Incorrect passcode. Please try again.");
+                }
+            }
+        }
+
+        function showAuthError(msg) {
+            authErrorMsg.textContent = msg;
+            authErrorMsg.style.display = 'block';
+            pinField.value = '';
+            pinField.focus();
+        }
+
+        function unlockApp() {
+            authErrorMsg.style.display = 'none';
+            authOverlay.style.display = 'none';
+            mainContainer.style.display = 'block';
+            pinField.value = '';
+            initTrackerApp();
+        }
+
+        function lockApp() {
+            mainContainer.style.display = 'none';
+            authOverlay.style.display = 'flex';
+            pinField.value = '';
+            initSecurity();
+        }
+
         // Message Carousel Animation
         function startMessageAnimation() {
             const msgAm = document.getElementById('msg-am');
@@ -630,7 +821,7 @@
             "Pagume (ጳጉሜ)"
         ];
 
-        // Workplace / Preset Options
+        // Preset Options
         const presets = {
             income: [
                 "Eka Kotebe Hospital - Salary",
@@ -686,7 +877,7 @@
         }
 
         let currentMonthKey = '';
-        let appData = JSON.parse(localStorage.getItem('smart_income_eth_data')) || {};
+        let appData = {};
 
         const ethMonthSelect = document.getElementById('ethiopian-month');
         const ethYearSelect = document.getElementById('ethiopian-year');
@@ -701,7 +892,14 @@
         const netBalanceEl = document.getElementById('net-balance');
         const exportCsvBtn = document.getElementById('export-csv-btn');
 
-        function init() {
+        let isAppInitialized = false;
+
+        function initTrackerApp() {
+            if (isAppInitialized) return;
+            isAppInitialized = true;
+
+            appData = JSON.parse(localStorage.getItem('smart_income_eth_data')) || {};
+
             startMessageAnimation();
 
             ethiopianMonths.forEach((m, idx) => {
@@ -886,7 +1084,7 @@
             });
         }
 
-        // Native Android-Compatible CSV Export
+        // Native Android CSV Export
         function exportToCSV() {
             const currentRecords = appData[currentMonthKey] || [];
             if (currentRecords.length === 0) {
@@ -896,7 +1094,6 @@
 
             const ethPeriod = `${ethiopianMonths[ethMonthSelect.value]} ${ethYearSelect.value} E.C.`;
 
-            // Build CSV rows string directly
             let csvContent = "Ethiopian Period,Type,Description / Workplace,Amount (ETB)\n";
 
             currentRecords.forEach(item => {
@@ -905,7 +1102,6 @@
                 csvContent += line + "\n";
             });
 
-            // Use Encoded Data URI for native WebView compatibility
             const encodedUri = encodeURI("data:text/csv;charset=utf-8,\uFEFF" + csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -920,7 +1116,8 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        init();
+        // Boot security on start
+        initSecurity();
     </script>
 </body>
 </html>
