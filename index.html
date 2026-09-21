@@ -10,10 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- External Libraries for Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root {
@@ -106,15 +102,12 @@
             margin-bottom: 24px;
             padding: 16px 20px;
             box-shadow: var(--shadow-sm);
-            
-            /* CSS Grid Overlay Technique */
             display: grid;
             align-items: center;
             justify-items: center;
         }
 
         .message-item {
-            /* All stacked messages share cell 1/1 to lock container size */
             grid-area: 1 / 1;
             width: 100%;
             text-align: center;
@@ -122,7 +115,6 @@
             color: var(--primary-hover);
             font-size: 0.95rem;
             line-height: 1.5;
-            
             transition: opacity 0.4s ease, transform 0.4s ease;
             opacity: 0;
             transform: translateY(6px);
@@ -364,17 +356,12 @@
             border-radius: var(--radius-sm);
             font-weight: 600;
             width: auto;
+            background: #059669;
+            color: white;
         }
 
-        .btn-excel { background: #107c41; color: white; }
-        .btn-excel:hover { background: #0b5c30; }
-
-        .btn-pdf { background: #dc2626; color: white; }
-        .btn-pdf:hover { background: #b91c1c; }
-
-        .export-actions {
-            display: flex;
-            gap: 8px;
+        .btn-export:hover {
+            background: #047857;
         }
 
         /* Ledger Table Section */
@@ -484,7 +471,7 @@
             </div>
         </header>
 
-        <!-- Grid-Stacked Zero-Shift, Full-Visibility Animated Message Card -->
+        <!-- Dynamic Message Card -->
         <div class="personal-message-card">
             <div class="message-item active" id="msg-am">
                 <i class="fa-solid fa-heart" style="color: #ef4444; margin-right: 6px;"></i>
@@ -529,7 +516,7 @@
             </div>
         </section>
 
-        <!-- Main Content Area -->
+        <!-- Main Workspace Layout -->
         <div class="workspace">
             
             <!-- Left Panel: Input Form -->
@@ -578,37 +565,29 @@
                 </button>
             </section>
 
-            <!-- Right Panel: Monthly Ledger & Export -->
+            <!-- Right Panel: Monthly Ledger & Native CSV Export -->
             <section class="content-card">
                 <div class="card-header-bar">
                     <h2><i class="fa-solid fa-file-invoice-dollar"></i> Ledger Statement</h2>
                     
-                    <div class="export-actions">
-                        <button class="btn btn-export btn-excel" id="export-excel-btn" title="Export to Excel">
-                            <i class="fa-solid fa-file-excel"></i> Excel
-                        </button>
-                        <button class="btn btn-export btn-pdf" id="export-pdf-btn" title="Export to PDF">
-                            <i class="fa-solid fa-file-pdf"></i> PDF
-                        </button>
-                    </div>
+                    <button class="btn btn-export" id="export-csv-btn" title="Export to CSV (Android Compatible)">
+                        <i class="fa-solid fa-file-csv"></i> Export CSV
+                    </button>
                 </div>
 
-                <div id="pdf-export-area">
-                    <div class="ledger-container">
-                        <table class="ledger-table">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Workplace / Source</th>
-                                    <th style="text-align: right;">Amount (ETB)</th>
-                                    <th style="text-align: center; width: 60px;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transaction-list"></tbody>
-                        </table>
-                    </div>
+                <div class="ledger-container">
+                    <table class="ledger-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Workplace / Source</th>
+                                <th style="text-align: right;">Amount (ETB)</th>
+                                <th style="text-align: center; width: 60px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-list"></tbody>
+                    </table>
                 </div>
-
             </section>
 
         </div>
@@ -616,7 +595,7 @@
 
     <!-- JavaScript Logic -->
     <script>
-        // Smooth Message Switcher Logic
+        // Message Carousel Animation
         function startMessageAnimation() {
             const msgAm = document.getElementById('msg-am');
             const msgEn = document.getElementById('msg-en');
@@ -634,7 +613,7 @@
             }, 5000);
         }
 
-        // Exact 13 Ethiopian Months List
+        // 13 Ethiopian Months Definition
         const ethiopianMonths = [
             "Meskerem (መስከረም)",
             "Tikimt (ጥቅምት)",
@@ -651,7 +630,7 @@
             "Pagume (ጳጉሜ)"
         ];
 
-        // Preset Categories
+        // Workplace / Preset Options
         const presets = {
             income: [
                 "Eka Kotebe Hospital - Salary",
@@ -672,7 +651,7 @@
             ]
         };
 
-        // Gregorian to Ethiopian Date Mapping
+        // Gregorian to Ethiopian Calendar Converter
         function toEthiopianDate(gregorianDate) {
             const date = new Date(gregorianDate);
             let year = date.getFullYear();
@@ -720,8 +699,7 @@
         const totalIncomeEl = document.getElementById('total-income');
         const totalExpensesEl = document.getElementById('total-expenses');
         const netBalanceEl = document.getElementById('net-balance');
-        const exportExcelBtn = document.getElementById('export-excel-btn');
-        const exportPdfBtn = document.getElementById('export-pdf-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
 
         function init() {
             startMessageAnimation();
@@ -734,7 +712,7 @@
             });
 
             const currentEth = toEthiopianDate(new Date());
-            for (let y = currentEth.year - 15; y <= currentEth.year + 60; y++) {
+            for (let y = currentEth.year - 3; y <= currentEth.year + 3; y++) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y + " E.C.";
@@ -750,8 +728,7 @@
             typeInput.addEventListener('change', updatePresetDropdown);
             presetSelect.addEventListener('change', handlePresetChange);
             addBtn.addEventListener('click', addTransaction);
-            exportExcelBtn.addEventListener('click', exportToExcel);
-            exportPdfBtn.addEventListener('click', exportToPDF);
+            exportCsvBtn.addEventListener('click', exportToCSV);
 
             updatePresetDropdown();
             render();
@@ -909,7 +886,8 @@
             });
         }
 
-        function exportToExcel() {
+        // Native Android-Compatible CSV Export
+        function exportToCSV() {
             const currentRecords = appData[currentMonthKey] || [];
             if (currentRecords.length === 0) {
                 alert('No data available to export for this month.');
@@ -918,82 +896,24 @@
 
             const ethPeriod = `${ethiopianMonths[ethMonthSelect.value]} ${ethYearSelect.value} E.C.`;
 
-            const dataToExport = currentRecords.map(item => ({
-                "Ethiopian Period": ethPeriod,
-                "Type": item.type.toUpperCase(),
-                "Description / Workplace": item.description,
-                "Amount (ETB)": item.amount
-            }));
+            // Build CSV rows string directly
+            let csvContent = "Ethiopian Period,Type,Description / Workplace,Amount (ETB)\n";
 
-            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, `Ledger_${currentMonthKey}`);
-
-            XLSX.writeFile(workbook, `Income_Ledger_${currentMonthKey}.xlsx`);
-        }
-
-        function exportToPDF() {
-            const currentRecords = appData[currentMonthKey] || [];
-            if (currentRecords.length === 0) {
-                alert('No data available to export for this month.');
-                return;
-            }
-
-            const ethPeriod = `${ethiopianMonths[ethMonthSelect.value]} ${ethYearSelect.value} E.C.`;
-
-            const element = document.createElement('div');
-            element.style.padding = '20px';
-            element.style.fontFamily = 'Arial, sans-serif';
-
-            let totalInc = 0, totalExp = 0;
-            currentRecords.forEach(r => {
-                if(r.type==='income') totalInc += r.amount;
-                else totalExp += r.amount;
+            currentRecords.forEach(item => {
+                const escapedDesc = `"${item.description.replace(/"/g, '""')}"`;
+                const line = `"${ethPeriod}",${item.type.toUpperCase()},${escapedDesc},${item.amount}`;
+                csvContent += line + "\n";
             });
 
-            element.innerHTML = `
-                <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4f46e5; padding-bottom: 10px;">
-                    <h1 style="color: #312e81; margin-bottom: 5px;">Monthly Financial Statement</h1>
-                    <p style="color: #6b7280; font-weight: bold;">Ethiopian Calendar Period: ${ethPeriod}</p>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px;">
-                    <div><strong>Total Income:</strong> <span style="color: #10b981;">${formatCurrency(totalInc)}</span></div>
-                    <div><strong>Total Deductions:</strong> <span style="color: #ef4444;">${formatCurrency(totalExp)}</span></div>
-                    <div><strong>Net Balance:</strong> <span style="color: #4f46e5;">${formatCurrency(totalInc - totalExp)}</span></div>
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                    <thead>
-                        <tr style="background-color: #4f46e5; color: white;">
-                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Type</th>
-                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Workplace / Description</th>
-                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">Amount (ETB)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${currentRecords.map(item => `
-                            <tr>
-                                <td style="padding: 8px; border: 1px solid #ddd;">${item.type.toUpperCase()}</td>
-                                <td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(item.description)}</td>
-                                <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: ${item.type === 'income' ? '#10b981' : '#ef4444'};">
-                                    ${item.type === 'income' ? '+' : '-'}${formatCurrency(item.amount)}
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-
-            const opt = {
-                margin:       10,
-                filename:     `Income_Statement_${currentMonthKey}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save();
+            // Use Encoded Data URI for native WebView compatibility
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8,\uFEFF" + csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Income_Ledger_${currentMonthKey}.csv`);
+            document.body.appendChild(link);
+            
+            link.click();
+            document.body.removeChild(link);
         }
 
         function escapeHtml(str) {
